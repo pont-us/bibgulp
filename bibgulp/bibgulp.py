@@ -1,7 +1,33 @@
 #!/usr/bin/env python3
 
+"""bibgulp: prettify downloaded BibTeX records and put them on the clipboard
+
+See readme for details.
+"""
+
+# MIT License
+#
+# Copyright (c) 2020 Pontus Lurcock
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import argparse
-import io
 import os
 import re
 import subprocess
@@ -12,6 +38,18 @@ import unicodedata
 from bibtexparser import customization as czn
 from bibtexparser.bparser import BibTexParser
 from bibtexparser.latexenc import string_to_latex
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Reformat bibtex files.")
+    parser.add_argument("inputfile", metavar="filename", type=str, nargs="?",
+                        help="input file, or directory to watch")
+    args = parser.parse_args()
+    if os.path.isdir(args.inputfile):
+        watch_dir(args.inputfile)
+    else:
+        parse_file(args.inputfile)
+
 
 _stop_words = "a an the on is it at of in as to are there el la has"
 stop_words = set(_stop_words.split())
@@ -142,7 +180,9 @@ def clean_record(record):
 
 def parse_bibtex(contents):
     parser = BibTexParser()
-    database = parser.parse(contents + b"\n")
+    contents_str = \
+        contents if type(contents) == str else contents.decode('utf-8')
+    database = parser.parse(contents_str + "\n")
     for record in database.entries:
         output = clean_record(record)
         print(output)
@@ -185,18 +225,6 @@ def watch_dir(dirname):
             print("Parsing: ", leafname)
             parse_file(os.path.join(dirname, leafname))
         contents_prev = contents
-
-
-def main():
-    # logging.basicConfig(level="DEBUG", format="%(levelname)-8s: %(message)s")
-    parser = argparse.ArgumentParser(description="Reformat bibtex files.")
-    parser.add_argument("inputfile", metavar="filename", type=str, nargs="?",
-                        help="input file, or directory to watch")
-    args = parser.parse_args()
-    if os.path.isdir(args.inputfile):
-        watch_dir(args.inputfile)
-    else:
-        parse_file(args.inputfile)
 
 
 if __name__ == "__main__":
