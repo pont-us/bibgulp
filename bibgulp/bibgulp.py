@@ -1,81 +1,91 @@
 #!/usr/bin/env python3
 
 import argparse
-import bibtexparser
+import io
+import os
+import re
+import subprocess
+import textwrap
+import time
+import unicodedata
+
+from bibtexparser import customization as czn
 from bibtexparser.bparser import BibTexParser
 from bibtexparser.latexenc import string_to_latex
-from bibtexparser import customization as czn
-import re
-import textwrap
-import unicodedata
-import os
-import time
-import subprocess
-import chardet
-import logging
-import io
 
 _stop_words = "a an the on is it at of in as to are there el la has"
 stop_words = set(_stop_words.split())
 field_order = """author title year journal volume number pages
                  editor booktitle series keywords""".split()
 known_fields = set(field_order + ["type", "id", "abstract"])
-capitalizers = set(["Science", "Geology", "Surveys in Geophysics",
-                    "Radiocarbon"])
+capitalizers = {"Science", "Geology", "Surveys in Geophysics", "Radiocarbon"}
+
 
 def get_first_word(record):
-    if "title" not in record: return
+    if "title" not in record:
+        return
     title = record["title"]
     words = [w.lower() for w in title.split()]
     for word in words:
         if word not in stop_words and \
-           not re.match("\d", word): return word
+           not re.match(r"\d", word):
+            return word
     return "xxx"
 
+
 def fix_pages(record):
-    if "pages" not in record: return
+    if "pages" not in record:
+        return
     p0 = record["pages"]
     matches = re.search(r"(\d+)\D+(\d+)", p0)
     if matches:
         record["pages"] = "%s--%s" % (matches.group(1), matches.group(2))
 
+
 def fix_title(record):
-    if "title" not in record: return
-    if "journal" in record and record["journal"] in capitalizers: return
+    if "title" not in record:
+        return
+    if "journal" in record and record["journal"] in capitalizers:
+        return
     words = record["title"].split(" ")
     for i in range(1, len(words)):
         w0 = words[i]
-        if len(w0)>1 and w0[0].isupper() and w0[1:].islower():
+        if len(w0) > 1 and w0[0].isupper() and w0[1:].islower():
             # title case
             w1 = "{"+w0[0]+"}"+w0[1:]
         elif w0.islower() or not re.match(r"[a-zA-Z]", w0):
             # all lowercase, or no alphabetic characters
             w1 = w0
-        else: # mixed case or all upper case
+        else:  # mixed case or all upper case
             w1 = "{"+w0+"}"
         words[i] = w1
     record["title"] = " ".join(words)
 
+
 def print_field(output, key, value):
     line = "%s = {%s}," % (key, value)
-    wrapper = textwrap.TextWrapper(width = 78,
-                                   initial_indent = "  ",
-                                   subsequent_indent = "    ")
+    wrapper = textwrap.TextWrapper(width=78,
+                                   initial_indent="  ",
+                                   subsequent_indent="    ")
     lines = wrapper.wrap(line)
     output += lines
 
+
 def strip_accents(s):
-   return ''.join(c for c in unicodedata.normalize('NFD', s)
-                  if unicodedata.category(c) != 'Mn')
+    return "".join(c for c in unicodedata.normalize('NFD', s)
+                   if unicodedata.category(c) != 'Mn')
+
 
 def clean_record(record):
-    if len(record["id"])>0 and record["id"][0] == "\n" and "=" in record["id"]:
+    if len(record["id"]) > 0 \
+            and record["id"][0] == "\n" \
+            and "=" in record["id"]:
         # probably a blank ID which has swallowed the first field
         parts = record["id"][1:].split("=")
         record[parts[0]] = parts[1][1:]
     for key, value in record.items():
         record[key] = value.strip()
-    czn.author(record) # modifies in-place
+    czn.author(record)  # modifies in-place
     fix_pages(record)
     if "abstract" not in record:
         record["abstract"] = ""
@@ -119,15 +129,17 @@ def clean_record(record):
             print_field(output, key, value)
 
     # Elsevier like to throw in some backslashes and curly brackets.
-    record["abstract"] = record["abstract"].replace(r"\{","").replace(r"\}","")
+    record["abstract"] = \
+        record["abstract"].replace(r"\{", "").replace(r"\}", "")
 
     if "url" in record and "sciencedirect" in record["url"]:
-         # Elsevier append the word "Abstract" to the start of the abstract.
+        # Elsevier append the word "Abstract" to the start of the abstract.
         record["abstract"] = re.sub("^Abstract ", "", record["abstract"])
     print_field(output, "abstract", record["abstract"])
-    output[-1] = output[-1][:-1] # strip trailing comma
+    output[-1] = output[-1][:-1]  # strip trailing comma
     output.append("}")
     return "\n".join(output)+"\n\n"
+
 
 def parse_bibtex(filehandle):
     contents = filehandle.read()
@@ -137,6 +149,7 @@ def parse_bibtex(filehandle):
             output = clean_record(record)
             print(output)
             to_clipboard(output)
+
 
 def parse_file(filename):
 
@@ -159,35 +172,39 @@ def parse_file(filename):
         with open(filename, "r") as bibfile:
             parse_bibtex(bibfile)
 
+
 def to_clipboard(text):
     for options in "-pi", "-bi":
         p = subprocess.Popen(["xsel", options], stdin=subprocess.PIPE)
         p.communicate(input=bytes(text, "UTF-8"))
 
+
 def watch_dir(dirname):
     contents_prev = set(os.listdir(dirname))
     while True:
-      time.sleep(0.2)
-      contents = set(os.listdir(dirname))
-      contents_new = contents - contents_prev
-      time.sleep(0.3) # let partial files finish downloading
-      for leafname in contents_new:
-          if re.search(r"[.](pdf|part|crdownload)$", leafname, re.IGNORECASE):
-             continue
-          print("Parsing: ", leafname)
-          parse_file(os.path.join(dirname, leafname))
-      contents_prev = contents
+        time.sleep(0.2)
+        contents = set(os.listdir(dirname))
+        contents_new = contents - contents_prev
+        time.sleep(0.3)  # let partial files finish downloading
+        for leafname in contents_new:
+            if re.search(r"[.](pdf|part|crdownload)$", leafname, re.IGNORECASE):
+                continue
+            print("Parsing: ", leafname)
+            parse_file(os.path.join(dirname, leafname))
+        contents_prev = contents
+
 
 def main():
-    #logging.basicConfig(level="DEBUG", format="%(levelname)-8s: %(message)s")
+    # logging.basicConfig(level="DEBUG", format="%(levelname)-8s: %(message)s")
     parser = argparse.ArgumentParser(description="Reformat bibtex files.")
     parser.add_argument("inputfile", metavar="filename", type=str, nargs="?",
-                   help="input file, or directory to watch")
+                        help="input file, or directory to watch")
     args = parser.parse_args()
     if os.path.isdir(args.inputfile):
         watch_dir(args.inputfile)
     else:
         parse_file(args.inputfile)
+
 
 if __name__ == "__main__":
     main()
