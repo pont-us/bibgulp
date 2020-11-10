@@ -140,15 +140,13 @@ def clean_record(record):
     return "\n".join(output)+"\n\n"
 
 
-def parse_bibtex(filehandle):
-    contents = filehandle.read()
-    with io.StringIO(str(contents) + "\n") as fh_with_newline:
-        parser = BibTexParser()
-        database = parser.parse_file(fh_with_newline)
-        for record in database.entries:
-            output = clean_record(record)
-            print(output)
-            to_clipboard(output)
+def parse_bibtex(contents):
+    parser = BibTexParser()
+    database = parser.parse(contents + b"\n")
+    for record in database.entries:
+        output = clean_record(record)
+        print(output)
+        to_clipboard(output)
 
 
 def parse_file(filename):
@@ -159,15 +157,13 @@ def parse_file(filename):
             if line.startswith("TY  - "):
                 ris = True
     if ris:
-        print("RIS!")
-        p = subprocess.Popen(["ris2xml \"%s\" | xml2bib" % filename],
-                             shell=True,
-                             stdout=subprocess.PIPE)
-        p.wait()
-        parse_bibtex(p.stdout)
+        process = subprocess.run(
+            ["ris2xml \"%s\" | xml2bib" % filename],
+            shell=True, capture_output=True)
+        parse_bibtex(process.stdout)
     else:
         with open(filename, "r") as bibfile:
-            parse_bibtex(bibfile)
+            parse_bibtex(bibfile.read())
 
 
 def to_clipboard(text):
