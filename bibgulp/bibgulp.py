@@ -17,7 +17,7 @@ _stop_words = "a an the on is it at of in as to are there el la has"
 stop_words = set(_stop_words.split())
 field_order = """author title year journal volume number pages
                  editor booktitle series keywords""".split()
-known_fields = set(field_order + ["type", "id", "abstract"])
+known_fields = set(field_order + ["ENTRYTYPE", "ID", "abstract"])
 capitalizers = {"Science", "Geology", "Surveys in Geophysics", "Radiocarbon"}
 
 
@@ -77,11 +77,10 @@ def strip_accents(s):
 
 
 def clean_record(record):
-    if len(record["id"]) > 0 \
-            and record["id"][0] == "\n" \
-            and "=" in record["id"]:
+    id_ = record["ID"]
+    if len(id_) > 0 and id_[0] == "\n" and "=" in id_:
         # probably a blank ID which has swallowed the first field
-        parts = record["id"][1:].split("=")
+        parts = id_[1:].split("=")
         record[parts[0]] = parts[1][1:]
     for key, value in record.items():
         record[key] = value.strip()
@@ -112,7 +111,7 @@ def clean_record(record):
     if "number" in record:
         record["number"] = record["number"].replace("–", "--")
     authorkey = strip_accents(record["author"][0].split(",")[0].lower())
-    output = ["@%s{%s%s%s," % (record["type"], authorkey, record["year"],
+    output = ["@%s{%s%s%s," % (record["ENTRYTYPE"], authorkey, record["year"],
                                get_first_word(record))]
     record["author"] = " and ".join(record["author"])
     record["author"] = string_to_latex(record["author"])
@@ -144,8 +143,9 @@ def clean_record(record):
 def parse_bibtex(filehandle):
     contents = filehandle.read()
     with io.StringIO(str(contents) + "\n") as fh_with_newline:
-        bp = BibTexParser(fh_with_newline)
-        for record in bp.get_entry_list():
+        parser = BibTexParser()
+        database = parser.parse_file(fh_with_newline)
+        for record in database.entries:
             output = clean_record(record)
             print(output)
             to_clipboard(output)
