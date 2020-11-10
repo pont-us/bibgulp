@@ -34,6 +34,7 @@ import subprocess
 import textwrap
 import time
 import unicodedata
+from typing import Union
 
 from bibtexparser import customization as czn
 from bibtexparser.bparser import BibTexParser
@@ -109,7 +110,7 @@ def print_field(output, key, value):
     output += lines
 
 
-def strip_accents(s):
+def strip_accents(s: str) -> str:
     return "".join(c for c in unicodedata.normalize('NFD', s)
                    if unicodedata.category(c) != 'Mn')
 
@@ -178,7 +179,7 @@ def clean_record(record):
     return "\n".join(output)+"\n\n"
 
 
-def parse_bibtex(contents):
+def parse_bibtex(contents: Union[str, bytes]) -> None:
     parser = BibTexParser()
     contents_str = \
         contents if type(contents) == str else contents.decode('utf-8')
@@ -189,7 +190,7 @@ def parse_bibtex(contents):
         to_clipboard(output)
 
 
-def parse_file(filename):
+def parse_file(filename: str) -> None:
     ris = False
     with open(filename, "r") as bibfile:
         for i in range(10):
@@ -206,13 +207,13 @@ def parse_file(filename):
             parse_bibtex(bibfile.read())
 
 
-def to_clipboard(text):
+def to_clipboard(text: str) -> None:
     for options in "-pi", "-bi":
         p = subprocess.Popen(["xsel", options], stdin=subprocess.PIPE)
         p.communicate(input=bytes(text, "UTF-8"))
 
 
-def watch_dir(dirname):
+def watch_dir(dirname: str) -> None:
     contents_prev = set(os.listdir(dirname))
     while True:
         time.sleep(0.2)
