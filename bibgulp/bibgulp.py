@@ -49,16 +49,16 @@ def fix_title(record):
         return
     words = record["title"].split(" ")
     for i in range(1, len(words)):
-        w0 = words[i]
-        if len(w0) > 1 and w0[0].isupper() and w0[1:].islower():
+        word0 = words[i]
+        if len(word0) > 1 and word0[0].isupper() and word0[1:].islower():
             # title case
-            w1 = "{"+w0[0]+"}"+w0[1:]
-        elif w0.islower() or not re.match(r"[a-zA-Z]", w0):
+            word1 = "{"+word0[0]+"}"+word0[1:]
+        elif word0.islower() or not re.match(r"[a-zA-Z]", word0):
             # all lowercase, or no alphabetic characters
-            w1 = w0
+            word1 = word0
         else:  # mixed case or all upper case
-            w1 = "{"+w0+"}"
-        words[i] = w1
+            word1 = "{" + word0 + "}"
+        words[i] = word1
     record["title"] = " ".join(words)
 
 
@@ -152,14 +152,12 @@ def parse_bibtex(filehandle):
 
 
 def parse_file(filename):
-
     ris = False
     with open(filename, "r") as bibfile:
         for i in range(10):
             line = bibfile.readline()
             if line.startswith("TY  - "):
                 ris = True
-
     if ris:
         print("RIS!")
         p = subprocess.Popen(["ris2xml \"%s\" | xml2bib" % filename],
@@ -167,7 +165,6 @@ def parse_file(filename):
                              stdout=subprocess.PIPE)
         p.wait()
         parse_bibtex(p.stdout)
-
     else:
         with open(filename, "r") as bibfile:
             parse_bibtex(bibfile)
