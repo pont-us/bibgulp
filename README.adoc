@@ -1,0 +1,47 @@
+# bibgulp
+
+https://github.com/pont-us/bibgulp
+
+## Use case
+
+You are downloading BibTeX (or RIS) records from journal websites for use in
+a bibliography, and you want to avoid the effort of opening each .bib file,
+manually fixing whatever mangled attempt at BibTeX the website has provided
+you with, and copy-pasting it into your master BibTeX file.
+
+## What bibgulp does
+
+Bibgulp is a small Python script which does the following:
+
+1. It runs in the background watching your downloads directory.
+2. When a BibTeX file appears in the directory, bibgulp reads the file and
+   corrects and standardizes various bugs and misformattings that it knows
+   about. If a RIS file appears, it will convert it to BibTeX and then apply
+   the same corrections.
+3. It then places a neatly and consistently formatted version of the corrected
+   BibTeX file on your clipboard, ready to paste into your master BibTeX
+   file.
+
+## Usage
+
+`./bibgulp.py /path/to/my/downloads/directory`
+
+## Requirements
+
+ - Python >=3.5
+ - the Python `bibtexparser` package
+ - the `ris2xml` and `xml2bib` utilities from the `bibutils` package,
+   for converting RIS to BibTeX
+ - the `xsel` command-line utility (to put things on the clipboard)
+
+## Notes
+
+This is a very slapdash, quick-and-dirty utility written for my own use, with
+various ad-hoc heuristics added over time as I come across new creative misuses
+of BibTeX by journal publishers. Often the output still needs a little
+hand-editing, but far less than raw BibTeX downloads usually do.
+
+## Copyright and authorship
+
+bibgulp is copyright 2020 Pontus Lurcock (pont@talvi.net) and released under
+the MIT License (license text in the script).
