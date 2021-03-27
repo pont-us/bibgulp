@@ -43,5 +43,5 @@ hand-editing, but far less than raw BibTeX downloads usually do.
 
 ## Copyright and authorship
 
-bibgulp is copyright 2020 Pontus Lurcock (pont@talvi.net) and released under
-the MIT License (license text in the script).
+bibgulp is copyright 2020-2021 Pontus Lurcock (pont@talvi.net) and released
+under the MIT License (license text in the script).

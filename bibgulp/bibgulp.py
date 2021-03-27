@@ -1,13 +1,8 @@
 #!/usr/bin/env python3
 
-"""bibgulp: prettify downloaded BibTeX records and put them on the clipboard
-
-See readme for details.
-"""
-
 # MIT License
 #
-# Copyright (c) 2020 Pontus Lurcock
+# Copyright (c) 2020-2021 Pontus Lurcock
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +21,11 @@ See readme for details.
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
+"""bibgulp: prettify downloaded BibTeX records and put them on the clipboard
+
+See readme for details.
+"""
 
 import argparse
 import os
@@ -180,7 +180,10 @@ def clean_record(record):
 
 
 def parse_bibtex(contents: Union[str, bytes]) -> None:
-    parser = BibTexParser()
+    # common_strings: see
+    # https://bibtexparser.readthedocs.io/en/master/bibtexparser.html#module-bibtexparser.bparser
+    # and https://github.com/sciunto-org/python-bibtexparser/issues/248 .
+    parser = BibTexParser(common_strings=True)
     contents_str = \
         contents if type(contents) == str else contents.decode('utf-8')
     database = parser.parse(contents_str + "\n")
