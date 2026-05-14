@@ -52,8 +52,9 @@ def main():
         parse_file(args.inputfile)
 
 
-_stop_words = "a an the on is it at of in as to are there el la has"
-stop_words = set(_stop_words.split())
+stop_words = set(
+    "a an are as at el has how in is it la of on the there to".split()
+)
 field_order = """author title year journal volume number pages
                  editor booktitle series keywords""".split()
 known_fields = set(field_order + ["ENTRYTYPE", "ID", "abstract"])
