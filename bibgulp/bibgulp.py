@@ -43,8 +43,13 @@ from bibtexparser.latexenc import string_to_latex
 
 def main():
     parser = argparse.ArgumentParser(description="Reformat bibtex files.")
-    parser.add_argument("inputfile", metavar="filename", type=str, nargs="?",
-                        help="input file, or directory to watch")
+    parser.add_argument(
+        "inputfile",
+        metavar="filename",
+        type=str,
+        nargs="?",
+        help="input file, or directory to watch",
+    )
     args = parser.parse_args()
     if os.path.isdir(args.inputfile):
         watch_dir(args.inputfile)
@@ -67,8 +72,7 @@ def get_first_word(record):
     title = record["title"]
     words = [w.lower() for w in title.split()]
     for word in words:
-        if word not in stop_words and \
-           not re.match(r"\d", word):
+        if word not in stop_words and not re.match(r"\d", word):
             return word
     return "xxx"
 
@@ -92,7 +96,7 @@ def fix_title(record):
         word0 = words[i]
         if len(word0) > 1 and word0[0].isupper() and word0[1:].islower():
             # title case
-            word1 = "{"+word0[0]+"}"+word0[1:]
+            word1 = "{" + word0[0] + "}" + word0[1:]
         elif word0.islower() or not re.match(r"[a-zA-Z]", word0):
             # all lowercase, or no alphabetic characters
             word1 = word0
@@ -104,16 +108,19 @@ def fix_title(record):
 
 def print_field(output, key, value):
     line = "%s = {%s}," % (key, value)
-    wrapper = textwrap.TextWrapper(width=78,
-                                   initial_indent="  ",
-                                   subsequent_indent="    ")
+    wrapper = textwrap.TextWrapper(
+        width=78, initial_indent="  ", subsequent_indent="    "
+    )
     lines = wrapper.wrap(line)
     output += lines
 
 
 def strip_accents(s: str) -> str:
-    return "".join(c for c in unicodedata.normalize('NFD', s)
-                   if unicodedata.category(c) != 'Mn')
+    return "".join(
+        c
+        for c in unicodedata.normalize("NFD", s)
+        if unicodedata.category(c) != "Mn"
+    )
 
 
 def clean_record(record):
@@ -151,8 +158,15 @@ def clean_record(record):
     if "number" in record:
         record["number"] = record["number"].replace("–", "--")
     authorkey = strip_accents(record["author"][0].split(",")[0].lower())
-    output = ["@%s{%s%s%s," % (record["ENTRYTYPE"], authorkey, record["year"],
-                               get_first_word(record))]
+    output = [
+        "@%s{%s%s%s,"
+        % (
+            record["ENTRYTYPE"],
+            authorkey,
+            record["year"],
+            get_first_word(record),
+        )
+    ]
     record["author"] = " and ".join(record["author"])
     record["author"] = string_to_latex(record["author"])
     fix_title(record)
@@ -168,8 +182,9 @@ def clean_record(record):
             print_field(output, key, value)
 
     # Elsevier like to throw in some backslashes and curly brackets.
-    record["abstract"] = \
+    record["abstract"] = (
         record["abstract"].replace(r"\{", "").replace(r"\}", "")
+    )
 
     if "url" in record and "sciencedirect" in record["url"]:
         # Elsevier append the word "Abstract" to the start of the abstract.
@@ -177,7 +192,7 @@ def clean_record(record):
     print_field(output, "abstract", record["abstract"])
     output[-1] = output[-1][:-1]  # strip trailing comma
     output.append("}")
-    return "\n".join(output)+"\n\n"
+    return "\n".join(output) + "\n\n"
 
 
 def parse_bibtex(contents: Union[str, bytes]) -> None:
@@ -185,8 +200,9 @@ def parse_bibtex(contents: Union[str, bytes]) -> None:
     # https://bibtexparser.readthedocs.io/en/master/bibtexparser.html#module-bibtexparser.bparser
     # and https://github.com/sciunto-org/python-bibtexparser/issues/248 .
     parser = BibTexParser(common_strings=True)
-    contents_str = \
-        contents if type(contents) == str else contents.decode('utf-8')
+    contents_str = (
+        contents if type(contents) == str else contents.decode("utf-8")
+    )
     database = parser.parse(contents_str + "\n")
     for record in database.entries:
         output = clean_record(record)
@@ -203,8 +219,10 @@ def parse_file(filename: str) -> None:
                 ris = True
     if ris:
         process = subprocess.run(
-            ["ris2xml \"%s\" | xml2bib" % filename],
-            shell=True, capture_output=True)
+            ['ris2xml "%s" | xml2bib' % filename],
+            shell=True,
+            capture_output=True,
+        )
         parse_bibtex(process.stdout)
     else:
         with open(filename, "r") as bibfile:
@@ -225,7 +243,9 @@ def watch_dir(dirname: str) -> None:
         contents_new = contents - contents_prev
         time.sleep(0.3)  # let partial files finish downloading
         for leafname in contents_new:
-            if re.search(r"[.](pdf|part|crdownload)$", leafname, re.IGNORECASE):
+            if re.search(
+                r"[.](pdf|part|crdownload)$", leafname, re.IGNORECASE
+            ):
                 continue
             print("Parsing: ", leafname)
             parse_file(os.path.join(dirname, leafname))
